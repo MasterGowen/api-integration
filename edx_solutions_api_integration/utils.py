@@ -23,7 +23,7 @@ from openedx.core.djangoapps.user_api.accounts.image_helpers import (
     _get_default_profile_image_urls,
 )
 from openedx.core.djangoapps.user_api.accounts.serializers import PROFILE_IMAGE_KEY_PREFIX
-from student.roles import CourseRole, CourseObserverRole
+from student.roles import CourseRole, CourseStaffRole  # , CourseObserverRole
 
 USER_METRICS_CACHE_TTL = 60 * 60
 COURSE_METRICS_CACHE_TTL = 30 * 60
@@ -182,7 +182,7 @@ def get_aggregate_exclusion_user_ids(course_key, roles=None):  # pylint: disable
     if cached_data is not None:
         return cached_data
     exclude_user_ids = set()
-    exclude_role_list = roles or getattr(settings, 'AGGREGATION_EXCLUDE_ROLES', [CourseObserverRole.ROLE])
+    exclude_role_list = roles or getattr(settings, 'AGGREGATION_EXCLUDE_ROLES', [CourseStaffRole.ROLE])
 
     for role in exclude_role_list:
         users = CourseRole(role, course_key).users_with_role()
@@ -292,7 +292,7 @@ def get_time_series_data(queryset, start, end, interval='days', date_field='crea
     where_clause = '{} BETWEEN "{}" AND "{}"'.format(date_field,
                                                      to_mysql_datetime(start) if engine == 'mysql' else start,
                                                      to_mysql_datetime(end) if engine == 'mysql' else end)
-    aggregate_data = queryset.extra(select={'d': interval_sql}, where=[where_clause]).order_by().values('d').\
+    aggregate_data = queryset.extra(select={'d': interval_sql}, where=[where_clause]).order_by().values('d'). \
         annotate(agg=aggregate)
 
     today = strip_time(now())
